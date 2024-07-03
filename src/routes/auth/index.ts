@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { signIn, signUp } from "./handlers";
+import { refresh, signIn, signUp } from "./handlers";
 
 const authRouter = new Elysia({ prefix: "/auth" })
   .post("/signin", signIn, {
@@ -41,6 +41,7 @@ const authRouter = new Elysia({ prefix: "/auth" })
         maxLength: 256,
       }),
     }),
-  });
+  })
+  .get("/refresh", refresh);
 
 export default authRouter;

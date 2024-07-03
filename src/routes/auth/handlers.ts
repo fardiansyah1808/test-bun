@@ -2,11 +2,16 @@ import { NotFoundError, Context, ParseError } from "elysia";
 import db from "../../lib/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { JWTPayloadSpec } from "@elysiajs/jwt";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
-export async function signUp({ ctx, body }: { ctx: Context; body: any }) {
+interface DecodedToken extends JWTPayloadSpec {
+  userId: string;
+}
+
+export async function signUp({ body }: { body: any }) {
   const { name, username, email, password } = body;
 
   // Hash password
@@ -14,6 +19,18 @@ export async function signUp({ ctx, body }: { ctx: Context; body: any }) {
 
   // Create new user
   try {
+    const emailExists = await db.user.findUnique({
+      where: { email },
+    });
+
+    const usernameExists = await db.user.findUnique({
+      where: { username },
+    });
+
+    if (emailExists || usernameExists) {
+      throw new ParseError("Email or username already exists");
+    }
+
     const newUser = await db.user.create({
       data: {
         name,
@@ -36,7 +53,7 @@ export async function signUp({ ctx, body }: { ctx: Context; body: any }) {
   }
 }
 
-export async function signIn({ ctx, body }: { ctx: Context; body: any }) {
+export async function signIn({ body }: { body: any }) {
   const { email, password } = body;
 
   // Find user by email
@@ -73,6 +90,7 @@ export async function signIn({ ctx, body }: { ctx: Context; body: any }) {
     await db.session.create({
       data: {
         userId: user.id,
+        userName: user.username,
         accessToken,
         refreshToken,
       },
@@ -88,5 +106,61 @@ export async function signIn({ ctx, body }: { ctx: Context; body: any }) {
   } catch (error) {
     // ctx.set.status = 400;
     throw error;
+  }
+}
+
+export async function refresh(ctx: Context, next: () => Promise<void>) {
+  const refreshToken = ctx.headers["x-refresh-token"] as string;
+
+  if (!refreshToken) {
+    return new Response("Refresh token is required", {
+      status: 400,
+      headers: {
+        "Content-Type": "text/html; charset=utf8",
+      },
+    });
+  }
+
+  if (!JWT_REFRESH_SECRET) {
+    return new Response("JWT_REFRESH_SECRET tidak diatur", {
+      status: 500,
+      headers: {
+        "Content-Type": "text/html; charset=utf8",
+      },
+    });
+  }
+
+  if (!JWT_ACCESS_SECRET) {
+    return new Response("JWT_ACCESS_SECRET tidak diatur", {
+      status: 500,
+      headers: {
+        "Content-Type": "text/html; charset=utf8",
+      },
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      JWT_REFRESH_SECRET
+    ) as DecodedToken;
+    const newAccessToken = jwt.sign(
+      { userId: decoded.userId },
+      JWT_ACCESS_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+    ctx.set.headers = {
+      "x-access-token": newAccessToken,
+    };
+    await next();
+  } catch (err) {
+    return new Response("Invalid refresh token", {
+      status: 403,
+      headers: {
+        "Content-Type": "text/html; charset=utf8",
+      },
+    });
   }
 }

@@ -30,15 +30,18 @@ model User {
   isResetPassword Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  sessions        Session[]
+  sessions        Session[] @relation("UserID")
+  sessionsName    Session[] @relation("UserName")
 }
 
 model Session {
   id           String   @id @default(cuid())
   userId       String
+  userName     String
   accessToken  String
   refreshToken String
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation("UserID", fields: [userId], references: [id])
+  userNaming   User     @relation("UserName", fields: [userName], references: [username])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

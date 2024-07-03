@@ -3,21 +3,30 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts",
+    "build": "bun build src/index.ts --outdir ./build --target node",
     "start": "NODE_ENV=production bun src/index.ts",
     "test": "bun test",
-    "db:push": "bunx prisma db push"
+    "db:push": "bunx prisma db push",
+    "db:studio": "bunx prisma studio"
   },
   "dependencies": {
     "@elysiajs/cookie": "^0.8.0",
+    "@elysiajs/cors": "^1.0.2",
     "@elysiajs/jwt": "^1.0.2",
     "@elysiajs/swagger": "^1.0.5",
     "@prisma/client": "5.16.1",
     "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.6",
+    "aws-sdk": "^2.1653.0",
+    "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
     "elysia": "latest",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "mailersend": "^2.2.0",
+    "mock-aws-s3": "^4.0.2",
+    "nock": "^13.5.4"
   },
   "devDependencies": {
     "bun-types": "latest",
